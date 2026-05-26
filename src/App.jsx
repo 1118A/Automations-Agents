@@ -40,7 +40,7 @@ export default function App() {
   const { toast, showToast } = useToast();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [leads, setLeads] = useState(INITIAL_LEADS);
-  const [selectedLead, setSelectedLead] = useState(INITIAL_LEADS[0]);
+  const [selectedLead, setSelectedLead] = useState(null);
   
   // Custom new lead modal state
   const [newLeadName, setNewLeadName] = useState('');
@@ -872,7 +872,7 @@ export default function App() {
                     {filteredLeads.map(lead => (
                       <tr 
                         key={lead.id} 
-                        style={{ borderBottom: '1px solid var(--border-light)', cursor: 'pointer', background: selectedLead.id === lead.id ? 'rgba(99, 102, 241, 0.03)' : 'transparent' }}
+                        style={{ borderBottom: '1px solid var(--border-light)', cursor: 'pointer', background: selectedLead?.id === lead.id ? 'rgba(99, 102, 241, 0.03)' : 'transparent' }}
                         onClick={() => setSelectedLead(lead)}
                       >
                         <td style={{ padding: '16px 24px' }}>
@@ -926,210 +926,225 @@ export default function App() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               <div className="glass-card" style={{ padding: '24px' }}>
                 <h3 style={{ fontSize: '1.25rem', marginBottom: '16px' }}>Select Lead to Qualify</h3>
-                <select 
-                  value={selectedLead.id}
-                  onChange={(e) => {
-                    const l = leads.find(le => le.id === Number(e.target.value));
-                    setSelectedLead(l);
-                    setSimulatedReplyDraft('');
-                  }}
-                  style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-light)', borderRadius: '8px', padding: '12px', color: 'white', marginBottom: '20px' }}
-                >
-                  {leads.map(l => (
-                    <option key={l.id} value={l.id} style={{ background: '#111' }}>
-                      {l.name} ({l.company}) — {l.priority} Priority
-                    </option>
-                  ))}
-                </select>
-
-                <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '20px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                    <h4 style={{ fontSize: '1rem', color: 'var(--accent-primary)' }}>Qualifying Profile (Agent 1 Output)</h4>
-                    <span className={`badge ${getStatusBadgeClass(selectedLead.status)}`}>{selectedLead.status}</span>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.9rem' }}>
-                    <div>
-                      <strong style={{ color: 'var(--text-secondary)' }}>Current Hook:</strong>
-                      <p style={{ marginTop: '4px', lineHeight: '1.4' }}>{selectedLead.hook}</p>
-                    </div>
-                    <div>
-                      <strong style={{ color: 'var(--text-secondary)' }}>Automation Pain Point:</strong>
-                      <p style={{ marginTop: '4px', lineHeight: '1.4' }}>{selectedLead.painPoint}</p>
-                    </div>
-                    <div style={{ display: 'flex', gap: '16px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px' }}>
-                      <div>
-                        <strong style={{ color: 'var(--text-secondary)' }}>Target Channel:</strong>
-                        <span style={{ display: 'block', marginTop: '4px' }}>{selectedLead.channel}</span>
-                      </div>
-                      <div>
-                        <strong style={{ color: 'var(--text-secondary)' }}>Priority:</strong>
-                        <span style={{ display: 'block', marginTop: '4px', color: 'var(--accent-warning)' }}>{selectedLead.priority}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Agent 5 - Follow-Up and Reply Simulator */}
-              <div className="glass-card" style={{ padding: '24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                  <Cpu size={18} color="var(--accent-secondary)" />
-                  <h3 style={{ fontSize: '1.25rem' }}>Agent 5 — Follow-Up & Reply Handler</h3>
-                </div>
                 
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-                  Select the lead response type below to trigger Agent 5 auto-qualification logic and construct a premium reply draft immediately.
-                </p>
+                {leads.length === 0 ? (
+                  <p style={{ color: 'var(--text-muted)', padding: '10px 0' }}>No leads tracked yet. Add one in CRM first!</p>
+                ) : (
+                  <>
+                  <select 
+                    value={selectedLead?.id || ''}
+                    onChange={(e) => {
+                      const l = leads.find(le => le.id === Number(e.target.value));
+                      setSelectedLead(l);
+                      setSimulatedReplyDraft('');
+                    }}
+                    style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-light)', borderRadius: '8px', padding: '12px', color: 'white', marginBottom: '20px' }}
+                  >
+                    {leads.map(l => (
+                      <option key={l.id} value={l.id} style={{ background: '#111' }}>
+                        {l.name} ({l.company}) — {l.priority} Priority
+                      </option>
+                    ))}
+                  </select>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '20px' }}>
-                  <button className="btn-secondary" onClick={() => handleSimulateReply('Interested')}>
-                    "Interested / Tell me more"
-                  </button>
-                  <button className="btn-secondary" onClick={() => handleSimulateReply('Pricing')}>
-                    "How much do you charge?"
-                  </button>
-                  <button className="btn-secondary" onClick={() => handleSimulateReply('Not interested')}>
-                    "Not interested"
-                  </button>
-                  <button className="btn-secondary" onClick={() => handleSimulateReply('Rude')}>
-                    "Rude / DNC"
-                  </button>
-                </div>
-
-                {simulatedReplyDraft && (
-                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '16px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--accent-success)', fontWeight: 600 }}>AUTO RESPONSE READY</span>
-                      <button 
-                        style={{ border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                        onClick={() => copyToClipboard(simulatedReplyDraft, 'Reply script copied!')}
-                      >
-                        <Copy size={14} /> Copy Draft
-                      </button>
+                  <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '20px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                      <h4 style={{ fontSize: '1rem', color: 'var(--accent-primary)' }}>Qualifying Profile (Agent 1 Output)</h4>
+                      <span className={`badge ${getStatusBadgeClass(selectedLead?.status)}`}>{selectedLead?.status}</span>
                     </div>
-                    <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.85rem', fontFamily: 'monospace', color: 'var(--text-primary)' }}>
-                      {simulatedReplyDraft}
-                    </pre>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.9rem' }}>
+                      <div>
+                        <strong style={{ color: 'var(--text-secondary)' }}>Current Hook:</strong>
+                        <p style={{ marginTop: '4px', lineHeight: '1.4' }}>{selectedLead?.hook}</p>
+                      </div>
+                      <div>
+                        <strong style={{ color: 'var(--text-secondary)' }}>Automation Pain Point:</strong>
+                        <p style={{ marginTop: '4px', lineHeight: '1.4' }}>{selectedLead?.painPoint}</p>
+                      </div>
+                      <div style={{ display: 'flex', gap: '16px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px' }}>
+                        <div>
+                          <strong style={{ color: 'var(--text-secondary)' }}>Target Channel:</strong>
+                          <span style={{ display: 'block', marginTop: '4px' }}>{selectedLead?.channel}</span>
+                        </div>
+                        <div>
+                          <strong style={{ color: 'var(--text-secondary)' }}>Priority:</strong>
+                          <span style={{ display: 'block', marginTop: '4px', color: 'var(--accent-warning)' }}>{selectedLead?.priority}</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
+                  </>
                 )}
               </div>
 
+              {/* Agent 5 - Follow-Up and Reply Simulator */}
+              {selectedLead && (
+                <div className="glass-card" style={{ padding: '24px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                    <Cpu size={18} color="var(--accent-secondary)" />
+                    <h3 style={{ fontSize: '1.25rem' }}>Agent 5 — Follow-Up & Reply Handler</h3>
+                  </div>
+                  
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                    Select the lead response type below to trigger Agent 5 auto-qualification logic and construct a premium reply draft immediately.
+                  </p>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '20px' }}>
+                    <button className="btn-secondary" onClick={() => handleSimulateReply('Interested')}>
+                      "Interested / Tell me more"
+                    </button>
+                    <button className="btn-secondary" onClick={() => handleSimulateReply('Pricing')}>
+                      "How much do you charge?"
+                    </button>
+                    <button className="btn-secondary" onClick={() => handleSimulateReply('Not interested')}>
+                      "Not interested"
+                    </button>
+                    <button className="btn-secondary" onClick={() => handleSimulateReply('Rude')}>
+                      "Rude / DNC"
+                    </button>
+                  </div>
+
+                  {simulatedReplyDraft && (
+                    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '16px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--accent-success)', fontWeight: 600 }}>AUTO RESPONSE READY</span>
+                        <button 
+                          style={{ border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                          onClick={() => copyToClipboard(simulatedReplyDraft, 'Reply script copied!')}
+                        >
+                          <Copy size={14} /> Copy Draft
+                        </button>
+                      </div>
+                      <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.85rem', fontFamily: 'monospace', color: 'var(--text-primary)' }}>
+                        {simulatedReplyDraft}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Right: Tailored Copywrite outputs */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              
               <div className="glass-card" style={{ padding: '24px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                  <h3 style={{ fontSize: '1.25rem' }}>Personalized Outreach Scripts</h3>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Customized as Aakash</span>
-                </div>
-
-                {selectedLead.channel === 'Email' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-primary)' }}>
-                      <Mail size={18} />
-                      <h4 style={{ fontWeight: 600 }}>Agent 2 — Gmail Outreach script</h4>
-                    </div>
-
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-light)', fontSize: '0.85rem' }}>
-                        <span style={{ color: 'var(--text-muted)' }}>Subject:</span>
-                        <span style={{ fontWeight: 600 }}>{generateEmail(selectedLead).subject}</span>
-                        <button style={{ border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }} onClick={() => copyToClipboard(generateEmail(selectedLead).subject, 'Subject line copied!')}>
-                          <Copy size={14} />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '16px', position: 'relative' }}>
-                      <button 
-                        style={{ position: 'absolute', right: '16px', top: '16px', border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }} 
-                        onClick={() => copyToClipboard(generateEmail(selectedLead).body, 'Email body copied!')}
-                      >
-                        <Copy size={16} />
-                      </button>
-                      <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.85rem', fontFamily: 'monospace', lineHeight: '1.5' }}>
-                        {generateEmail(selectedLead).body}
-                      </pre>
-                    </div>
+                {!selectedLead ? (
+                  <div style={{ textAlign: 'center', padding: '40px color: var(--text-muted)' }}>
+                    <AlertCircle size={32} style={{ marginBottom: '12px', color: 'var(--accent-primary)' }} />
+                    <p>Select or add a lead to see personal outreach scripts instantly!</p>
                   </div>
-                )}
-
-                {selectedLead.channel === 'LinkedIn' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-info)' }}>
-                      <Send size={18} />
-                      <h4 style={{ fontWeight: 600 }}>Agent 3 — LinkedIn Outreach scripts</h4>
-                    </div>
-
-                    {/* Step 1 */}
-                    <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '16px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <strong style={{ fontSize: '0.85rem', color: 'var(--accent-info)' }}>CONNECTION NOTE (Max 300 Chars)</strong>
-                        <button style={{ border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }} onClick={() => copyToClipboard(generateLinkedIn(selectedLead).connectionNote, 'Connection Note copied!')}>
-                          <Copy size={14} />
-                        </button>
-                      </div>
-                      <p style={{ fontSize: '0.85rem', fontStyle: 'italic' }}>"{generateLinkedIn(selectedLead).connectionNote}"</p>
-                    </div>
-
-                    {/* Step 2 */}
-                    <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '16px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <strong style={{ fontSize: '0.85rem', color: 'var(--accent-info)' }}>FIRST DM (After Connection)</strong>
-                        <button style={{ border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }} onClick={() => copyToClipboard(generateLinkedIn(selectedLead).firstDM, 'First DM copied!')}>
-                          <Copy size={14} />
-                        </button>
-                      </div>
-                      <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.85rem', fontFamily: 'monospace' }}>{generateLinkedIn(selectedLead).firstDM}</pre>
-                    </div>
-
-                    {/* Step 3 */}
-                    <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '16px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <strong style={{ fontSize: '0.85rem', color: 'var(--accent-info)' }}>FOLLOW-UP DM (If No Response)</strong>
-                        <button style={{ border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }} onClick={() => copyToClipboard(generateLinkedIn(selectedLead).followUpDM, 'Follow-up DM copied!')}>
-                          <Copy size={14} />
-                        </button>
-                      </div>
-                      <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.85rem', fontFamily: 'monospace' }}>{generateLinkedIn(selectedLead).followUpDM}</pre>
-                    </div>
+                ) : (
+                  <>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                    <h3 style={{ fontSize: '1.25rem' }}>Personalized Outreach Scripts</h3>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Customized as Aakash</span>
                   </div>
-                )}
 
-                {selectedLead.channel === 'Instagram' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-secondary)' }}>
-                      <Send size={18} />
-                      <h4 style={{ fontWeight: 600 }}>Agent 4 — Instagram Outreach DM</h4>
-                    </div>
-
-                    {/* Cold Outreach DM */}
-                    <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '16px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <strong style={{ fontSize: '0.85rem', color: 'var(--accent-secondary)' }}>FIRST DM (Casual Style)</strong>
-                        <button style={{ border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }} onClick={() => copyToClipboard(generateInstagram(selectedLead).firstDM, 'First IG DM copied!')}>
-                          <Copy size={14} />
-                        </button>
+                  {selectedLead.channel === 'Email' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-primary)' }}>
+                        <Mail size={18} />
+                        <h4 style={{ fontWeight: 600 }}>Agent 2 — Gmail Outreach script</h4>
                       </div>
-                      <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.85rem', fontFamily: 'monospace', lineHeight: '1.4' }}>{generateInstagram(selectedLead).firstDM}</pre>
-                    </div>
 
-                    {/* Follow Up */}
-                    <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '16px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <strong style={{ fontSize: '0.85rem', color: 'var(--accent-secondary)' }}>FOLLOW-UP IG DM</strong>
-                        <button style={{ border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }} onClick={() => copyToClipboard(generateInstagram(selectedLead).followUpDM, 'Follow-up IG DM copied!')}>
-                          <Copy size={14} />
-                        </button>
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-light)', fontSize: '0.85rem' }}>
+                          <span style={{ color: 'var(--text-muted)' }}>Subject:</span>
+                          <span style={{ fontWeight: 600 }}>{generateEmail(selectedLead).subject}</span>
+                          <button style={{ border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }} onClick={() => copyToClipboard(generateEmail(selectedLead).subject, 'Subject line copied!')}>
+                            <Copy size={14} />
+                          </button>
+                        </div>
                       </div>
-                      <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.85rem', fontFamily: 'monospace', lineHeight: '1.4' }}>{generateInstagram(selectedLead).followUpDM}</pre>
-                    </div>
-                  </div>
-                )}
 
+                      <div style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '16px', position: 'relative' }}>
+                        <button 
+                          style={{ position: 'absolute', right: '16px', top: '16px', border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }} 
+                          onClick={() => copyToClipboard(generateEmail(selectedLead).body, 'Email body copied!')}
+                        >
+                          <Copy size={16} />
+                        </button>
+                        <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.85rem', fontFamily: 'monospace', lineHeight: '1.5' }}>
+                          {generateEmail(selectedLead).body}
+                        </pre>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedLead.channel === 'LinkedIn' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-info)' }}>
+                        <Send size={18} />
+                        <h4 style={{ fontWeight: 600 }}>Agent 3 — LinkedIn Outreach scripts</h4>
+                      </div>
+
+                      {/* Step 1 */}
+                      <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '16px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                          <strong style={{ fontSize: '0.85rem', color: 'var(--accent-info)' }}>CONNECTION NOTE (Max 300 Chars)</strong>
+                          <button style={{ border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }} onClick={() => copyToClipboard(generateLinkedIn(selectedLead).connectionNote, 'Connection Note copied!')}>
+                            <Copy size={14} />
+                          </button>
+                        </div>
+                        <p style={{ fontSize: '0.85rem', fontStyle: 'italic' }}>"{generateLinkedIn(selectedLead).connectionNote}"</p>
+                      </div>
+
+                      {/* Step 2 */}
+                      <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '16px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                          <strong style={{ fontSize: '0.85rem', color: 'var(--accent-info)' }}>FIRST DM (After Connection)</strong>
+                          <button style={{ border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }} onClick={() => copyToClipboard(generateLinkedIn(selectedLead).firstDM, 'First DM copied!')}>
+                            <Copy size={14} />
+                          </button>
+                        </div>
+                        <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.85rem', fontFamily: 'monospace' }}>{generateLinkedIn(selectedLead).firstDM}</pre>
+                      </div>
+
+                      {/* Step 3 */}
+                      <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '16px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                          <strong style={{ fontSize: '0.85rem', color: 'var(--accent-info)' }}>FOLLOW-UP DM (If No Response)</strong>
+                          <button style={{ border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }} onClick={() => copyToClipboard(generateLinkedIn(selectedLead).followUpDM, 'Follow-up DM copied!')}>
+                            <Copy size={14} />
+                          </button>
+                        </div>
+                        <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.85rem', fontFamily: 'monospace' }}>{generateLinkedIn(selectedLead).followUpDM}</pre>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedLead.channel === 'Instagram' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-secondary)' }}>
+                        <Send size={18} />
+                        <h4 style={{ fontWeight: 600 }}>Agent 4 — Instagram Outreach DM</h4>
+                      </div>
+
+                      {/* Cold Outreach DM */}
+                      <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '16px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                          <strong style={{ fontSize: '0.85rem', color: 'var(--accent-secondary)' }}>FIRST DM (Casual Style)</strong>
+                          <button style={{ border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }} onClick={() => copyToClipboard(generateInstagram(selectedLead).firstDM, 'First IG DM copied!')}>
+                            <Copy size={14} />
+                          </button>
+                        </div>
+                        <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.85rem', fontFamily: 'monospace', lineHeight: '1.4' }}>{generateInstagram(selectedLead).firstDM}</pre>
+                      </div>
+
+                      {/* Follow Up */}
+                      <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '16px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                          <strong style={{ fontSize: '0.85rem', color: 'var(--accent-secondary)' }}>FOLLOW-UP IG DM</strong>
+                          <button style={{ border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }} onClick={() => copyToClipboard(generateInstagram(selectedLead).followUpDM, 'Follow-up IG DM copied!')}>
+                            <Copy size={14} />
+                          </button>
+                        </div>
+                        <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.85rem', fontFamily: 'monospace', lineHeight: '1.4' }}>{generateInstagram(selectedLead).followUpDM}</pre>
+                      </div>
+                    </div>
+                  )}
+                  </>
+                )}
               </div>
             </div>
 
